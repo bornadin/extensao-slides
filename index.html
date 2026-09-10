@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Segurança Digital — oficina de extensão · Unisanta</title>
+<style>
+  :root {
+    --marinho: #002F73;
+    --azul: #0044A9;
+    --azul-claro: #DCE8F8;
+    --fundo: #F3F7FC;
+    --texto: #14213D;
+    --texto-suave: #4A5A78;
+    --golpe: #D8232A;
+    --golpe-fundo: #FDECEC;
+    --protecao: #1E8E3E;
+    --protecao-fundo: #E6F4EA;
+    --branco: #FFFFFF;
+    --stage-w: 1280px;
+    --stage-h: 720px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--marinho);
+    color: var(--texto);
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* ---------- palco fixo 1280x720, escalado ao viewport ---------- */
+  #palco {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: var(--stage-w);
+    height: var(--stage-h);
+    transform: translate(-50%, -50%) scale(var(--escala, 1));
+    transform-origin: center center;
+    background: var(--fundo);
+    overflow: hidden;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.25);
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    padding: 56px 88px 96px;
+    background:
+      radial-gradient(circle at 92% 8%, rgba(0,68,169,.06) 0, rgba(0,68,169,0) 42%),
+      var(--fundo);
+  }
+  .slide.ativo { display: flex; }
+
+  /* padrão sutil de circuito no canto */
+  .slide::before {
+    content: "";
+    position: absolute;
+    right: 0; top: 0;
+    width: 420px; height: 300px;
+    background-image:
+      linear-gradient(rgba(0,68,169,.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,68,169,.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    -webkit-mask-image: radial-gradient(ellipse at top right, #000 0, transparent 70%);
+            mask-image: radial-gradient(ellipse at top right, #000 0, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ---------- rodapé ---------- */
+  #rodape {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 64px;
+    background: var(--marinho);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px 0 36px;
+    color: var(--branco);
+    z-index: 5;
+  }
+  #rodape img { height: 34px; width: auto; display: block; }
+  #rodape .info {
+    display: flex; align-items: center; gap: 28px;
+    font-size: 16px; color: rgba(255,255,255,.85);
+  }
+  #rodape .info span:first-child { letter-spacing: .01em; }
+  #contador { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--branco); }
+  #progresso {
+    position: absolute; left: 0; bottom: 64px; height: 5px;
+    background: var(--azul);
+    width: 0; transition: width .25s ease;
+    z-index: 6;
+  }
+
+  /* ---------- tipografia ---------- */
+  h1, h2, h3, p, ul, ol { margin: 0; }
+  .titulo {
+    display: inline-block;
+    background: var(--marinho);
+    color: var(--branco);
+    font-size: 44px;
+    font-weight: 700;
+    line-height: 1.15;
+    padding: 12px 26px 14px;
+    margin-left: -26px;
+    margin-bottom: 36px;
+    border-radius: 0 6px 6px 0;
+    align-self: flex-start;
+  }
+  .subtitulo {
+    font-size: 26px;
+    color: var(--texto-suave);
+    margin-top: -18px;
+    margin-bottom: 30px;
+  }
+  .corpo { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .grande { font-size: 32px; line-height: 1.35; }
+  .lista { list-style: none; padding: 0; display: grid; gap: 18px; font-size: 30px; line-height: 1.3; }
+  .lista li { display: flex; align-items: flex-start; gap: 18px; }
+  .lista svg { flex: 0 0 auto; width: 40px; height: 40px; margin-top: 2px; }
+  .lista.compacta { gap: 12px; font-size: 27px; }
+  .lista.compacta svg { width: 34px; height: 34px; }
+  .lista strong { font-weight: 700; }
+
+  .destaque {
+    margin-top: 34px;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--golpe);
+  }
+  .destaque.verde { color: var(--protecao); }
+
+  .faixa {
+    margin-top: auto;
+    background: var(--azul-claro);
+    border-left: 8px solid var(--azul);
+    padding: 16px 24px;
+    font-size: 24px;
+    color: var(--marinho);
+    border-radius: 0 8px 8px 0;
+  }
+  .faixa b { font-weight: 700; }
+
+  .duas-colunas { display: grid; grid-template-columns: 1.15fr 1fr; gap: 56px; align-items: center; }
+
+  /* ---------- capa ---------- */
+  .capa { padding: 0; }
+  .capa::before { display: none; }
+  .capa .lado {
+    position: absolute; left: 0; top: 0; bottom: 0; width: 34%;
+    background: var(--marinho);
+  }
+  .capa .lado::after {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+    background-size: 36px 36px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40%, #000 60%, transparent);
+            mask-image: linear-gradient(to bottom, transparent, #000 40%, #000 60%, transparent);
+  }
+  .capa .escudo {
+    position: absolute; left: 17%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 240px; height: 240px;
+  }
+  .capa .conteudo {
+    position: absolute; left: 34%; right: 0; top: 0; bottom: 64px;
+    padding: 0 80px 0 72px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .capa .tag { font-size: 22px; color: var(--azul); font-weight: 600; margin-bottom: 18px; }
+  .capa h1 { font-size: 78px; line-height: 1; letter-spacing: -.02em; color: var(--marinho); }
+  .capa h2 { font-size: 34px; font-weight: 400; color: var(--texto-suave); margin-top: 18px; line-height: 1.25; }
+  .capa .autor { margin-top: 56px; font-size: 24px; line-height: 1.5; color: var(--texto); }
+  .capa .autor b { font-weight: 700; }
+
+  /* ---------- slide 2: perguntas ---------- */
+  .perguntas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 30px; }
+  .perguntas div {
+    background: var(--branco);
+    border: 2px solid var(--azul-claro);
+    border-top: 8px solid var(--azul);
+    border-radius: 8px;
+    padding: 20px 22px;
+    font-size: 26px; line-height: 1.3;
+    color: var(--marinho);
+  }
+  .perguntas div small { display: block; font-size: 18px; color: var(--texto-suave); margin-bottom: 8px; }
+
+  /* ---------- slide 3: barras ---------- */
+  .barras { display: grid; gap: 16px; }
+  .barra { display: grid; grid-template-columns: 1fr 460px 130px; align-items: center; gap: 22px; font-size: 25px; }
+  .barra .trilho { height: 30px; background: var(--azul-claro); border-radius: 6px; overflow: hidden; }
+  .barra .cheio { height: 100%; background: var(--azul); border-radius: 6px; }
+  .barra.alerta .cheio { background: var(--golpe); }
+  .barra .numero { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--marinho); white-space: nowrap; }
+  .barra.alerta .numero { color: var(--golpe); }
+
+  /* ---------- slide 5: cards ---------- */
+  .cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px; }
+  .card {
+    background: var(--branco);
+    border: 2px solid var(--azul-claro);
+    border-radius: 10px;
+    padding: 22px 18px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+    min-height: 330px;
+  }
+  .card svg { width: 54px; height: 54px; }
+  .card h3 { font-size: 24px; line-height: 1.15; color: var(--marinho); }
+  .card p { font-size: 19px; line-height: 1.35; color: var(--texto-suave); }
+
+  /* ---------- slide 6: chat ---------- */
+  .telefone {
+    width: 400px;
+    background: #E5DDD5;
+    border: 10px solid #1c1c1e;
+    border-radius: 32px;
+    padding: 16px 14px 18px;
+    display: flex; flex-direction: column; gap: 10px;
+    align-self: center;
+    box-shadow: 0 20px 40px rgba(0,47,115,.18);
+  }
+  .telefone .topo {
+    background: #075E54; color: #fff;
+    margin: -16px -14px 4px; padding: 12px 16px;
+    border-radius: 20px 20px 0 0;
+    font-size: 17px; display: flex; align-items: center; gap: 12px;
+  }
+  .telefone .topo .avatar { width: 34px; height: 34px; border-radius: 50%; background: #cfd8dc; }
+  .telefone .topo small { display: block; font-size: 13px; opacity: .8; }
+  .bolha {
+    background: #fff; border-radius: 10px; padding: 8px 12px;
+    font-size: 18px; line-height: 1.3; max-width: 90%;
+    align-self: flex-start;
+    box-shadow: 0 1px 1px rgba(0,0,0,.08);
+  }
+  .bolha.eu { background: #DCF8C6; align-self: flex-end; }
+  .bolha time { display: block; font-size: 12px; color: #7a7a7a; text-align: right; margin-top: 4px; }
+
+  .passos-resposta { display: grid; gap: 22px; font-size: 27px; line-height: 1.3; }
+  .passos-resposta li { display: flex; gap: 16px; align-items: flex-start; }
+  .passos-resposta .n {
+    flex: 0 0 44px; height: 44px; border-radius: 50%;
+    background: var(--protecao); color: #fff;
+    display: grid; place-items: center; font-weight: 700; font-size: 22px;
+  }
+
+  /* ---------- slide 7: sinais ---------- */
+  .sinais { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .sinal {
+    background: var(--golpe-fundo);
+    border: 2px solid #f5c2c4;
+    border-radius: 10px;
+    padding: 22px 18px;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    min-height: 300px;
+  }
+  .sinal svg { width: 62px; height: 62px; }
+  .sinal h3 { font-size: 23px; color: var(--golpe); line-height: 1.15; }
+  .sinal p { font-size: 18px; line-height: 1.35; color: var(--texto-suave); }
+
+  /* ---------- slide 9: passos 2 etapas ---------- */
+  .passos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 22px; }
+  .passo {
+    background: var(--branco);
+    border: 2px solid var(--azul-claro);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 270px;
+  }
+  .passo .n {
+    width: 46px; height: 46px; border-radius: 50%;
+    background: var(--azul); color: #fff;
+    display: grid; place-items: center; font-weight: 700; font-size: 24px;
+  }
+  .passo h3 { font-size: 23px; color: var(--marinho); line-height: 1.2; }
+  .passo p { font-size: 19px; line-height: 1.35; color: var(--texto-suave); }
+  .passo .tela {
+    margin-top: auto;
+    background: #F6F6F6; border: 1px solid #ddd; border-radius: 8px;
+    padding: 10px 12px; font-size: 16px; color: #333; line-height: 1.4;
+  }
+  .passo .tela b { color: var(--azul); }
+
+  /* ---------- slide 10: senha ---------- */
+  .senha {
+    display: inline-block;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 30px;
+    background: var(--protecao-fundo);
+    color: var(--protecao);
+    border: 2px solid #b9dfc3;
+    border-radius: 8px;
+    padding: 4px 14px;
+    margin-left: 8px;
+  }
+
+  /* ---------- slide 11 ---------- */
+  .final { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px; }
+  .final div {
+    background: var(--branco);
+    border-left: 8px solid var(--protecao);
+    border-radius: 0 8px 8px 0;
+    padding: 20px 24px;
+    font-size: 27px; line-height: 1.3;
+  }
+  .final div b { display: block; color: var(--marinho); font-size: 29px; margin-bottom: 4px; }
+  .obrigado {
+    margin-top: 40px;
+    display: flex; align-items: baseline; gap: 26px;
+  }
+  .obrigado h2 { font-size: 54px; color: var(--marinho); }
+  .obrigado p { font-size: 26px; color: var(--texto-suave); }
+
+  /* ---------- ajuda ---------- */
+  #ajuda {
+    position: fixed; inset: 0;
+    background: rgba(0,20,60,.82);
+    color: #fff;
+    display: none; place-items: center;
+    z-index: 50;
+    font-size: 18px;
+  }
+  #ajuda.aberto { display: grid; }
+  #ajuda div { background: var(--marinho); padding: 32px 40px; border-radius: 12px; max-width: 520px; line-height: 1.7; }
+  #ajuda h2 { font-size: 24px; margin-bottom: 12px; }
+  #ajuda kbd {
+    display: inline-block; min-width: 34px; text-align: center;
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.35);
+    border-radius: 5px; padding: 1px 8px; font-family: inherit; margin-right: 6px;
+  }
+  #dica {
+    position: fixed; right: 16px; top: 12px;
+    color: rgba(255,255,255,.7); font-size: 13px;
+    background: rgba(0,0,0,.35); padding: 6px 12px; border-radius: 999px;
+    z-index: 20; cursor: pointer; user-select: none;
+  }
+  #dica:hover { color: #fff; }
+
+  /* ---------- impressão: um slide por página ---------- */
+  @media print {
+    html, body { overflow: visible; background: #fff; }
+    #palco {
+      position: static; transform: none;
+      width: auto; height: auto; box-shadow: none; overflow: visible;
+    }
+    .slide {
+      display: flex !important;
+      position: relative;
+      width: 1280px; height: 720px;
+      page-break-after: always;
+      break-after: page;
+      margin: 0 auto;
+    }
+    .slide::after {
+      content: "";
+      position: absolute; left: 0; right: 0; bottom: 0; height: 64px;
+      background: var(--marinho);
+    }
+    #rodape, #progresso, #dica, #ajuda { display: none !important; }
+    @page { size: 1280px 720px; margin: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div id="palco">
+
+  <!-- 1 · Capa -->
+  <section class="slide capa" data-nome="Capa">
+    <div class="lado"></div>
+    <svg class="escudo" viewBox="0 0 120 120" aria-hidden="true">
+      <path d="M60 8 L104 24 V58 C104 84 86 104 60 114 C34 104 16 84 16 58 V24 Z" fill="#0044A9" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M40 60 L54 74 L82 44" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="conteudo">
+      <p class="tag">Oficina de extensão curricular</p>
+      <h1>Segurança digital</h1>
+      <h2>Como reconhecer e evitar golpes pela internet no dia a dia</h2>
+      <p class="autor">
+        <b>Manoel de Brito Farias Junior</b><br>
+        Análise e Desenvolvimento de Sistemas<br>
+        Universidade Santa Cecília · 2026
+      </p>
+    </div>
+  </section>
+
+  <!-- 2 · Por que falar sobre isso -->
+  <section class="slide" data-nome="Por que falar sobre isso">
+    <h2 class="titulo">Por que falar sobre isso?</h2>
+    <div class="corpo">
+      <p class="grande">Hoje quase tudo passa pelo celular: conversar com a família, pagar conta, comprar, marcar consulta, receber salário. É prático, e os golpistas sabem disso.</p>
+      <p class="grande" style="margin-top:22px"><b style="color:var(--golpe)">Eles não invadem o aparelho. Eles convencem a pessoa a abrir a porta.</b></p>
+      <div class="perguntas">
+        <div><small>Levante a mão</small>Quem aqui usa WhatsApp todo dia?</div>
+        <div><small>Levante a mão</small>Quem já pagou alguma coisa com PIX?</div>
+        <div><small>Levante a mão</small>Quem já recebeu mensagem estranha pedindo dinheiro?</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · O que a comunidade respondeu -->
+  <section class="slide" data-nome="O que a comunidade respondeu">
+    <h2 class="titulo">O que a comunidade respondeu</h2>
+    <p class="subtitulo">Levantamento feito junto com colegas do curso: 69 pessoas, em dois questionários online</p>
+    <div class="corpo">
+      <div class="barras">
+        <div class="barra"><span>Usam celular e WhatsApp todos os dias</span><div class="trilho"><div class="cheio" style="width:100%"></div></div><span class="numero">32 de 32</span></div>
+        <div class="barra"><span>Já pagaram com PIX</span><div class="trilho"><div class="cheio" style="width:93.75%"></div></div><span class="numero">30 de 32</span></div>
+        <div class="barra alerta"><span>Conhecem alguém que caiu em golpe</span><div class="trilho"><div class="cheio" style="width:96.9%"></div></div><span class="numero">31 de 32</span></div>
+        <div class="barra alerta"><span>Não sabem dizer se um link é falso</span><div class="trilho"><div class="cheio" style="width:62.5%"></div></div><span class="numero">20 de 32</span></div>
+        <div class="barra alerta"><span>Têm dificuldade com links suspeitos</span><div class="trilho"><div class="cheio" style="width:81.1%"></div></div><span class="numero">30 de 37</span></div>
+        <div class="barra"><span>Querem se sentir mais seguros na internet</span><div class="trilho"><div class="cheio" style="width:94.6%"></div></div><span class="numero">35 de 37</span></div>
+      </div>
+      <div class="faixa">Todo mundo usa. Quase ninguém se sente seguro. <b>É por isso que estamos aqui.</b></div>
+    </div>
+  </section>
+
+  <!-- 4 · O que é um golpe digital -->
+  <section class="slide" data-nome="O que é um golpe digital">
+    <h2 class="titulo">O que é um golpe digital?</h2>
+    <div class="corpo duas-colunas">
+      <div>
+        <p class="grande">É uma mentira contada pela internet para tirar de você:</p>
+        <ul class="lista" style="margin-top:26px">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg><span><strong>Dinheiro</strong>, por PIX, boleto ou cartão</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="11" r="2.5"/><path d="M5 18c1-2.5 2.5-3.5 4-3.5S12 15.5 13 18M15 9h4M15 13h4"/></svg><span><strong>Dados pessoais</strong>: CPF, senhas, fotos de documentos</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><path d="M12 15v3"/></svg><span><strong>Acesso às suas contas</strong>: WhatsApp, banco, e-mail</span></li>
+        </ul>
+      </div>
+      <div>
+        <p class="grande" style="color:var(--marinho);font-weight:700">Por onde chega:</p>
+        <ul class="lista compacta" style="margin-top:20px">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/></svg>Mensagem no WhatsApp</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>E-mail ou SMS</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/></svg>Redes sociais e anúncios</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Ligação de "central do banco"</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · Golpes mais comuns -->
+  <section class="slide" data-nome="Os golpes que mais aparecem">
+    <h2 class="titulo">Os golpes que mais aparecem</h2>
+    <div class="corpo">
+      <div class="cards">
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg>
+          <h3>Golpe do WhatsApp</h3>
+          <p>Alguém se passa por filho, neto ou amigo, diz que trocou de número e pede dinheiro com urgência.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M9 12h6M12 9v6"/></svg>
+          <h3>Golpe do PIX</h3>
+          <p>"Você recebeu um prêmio", "fiz um PIX errado, devolve?", comprovante falso de pagamento.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/><path d="m4 4 16 16"/></svg>
+          <h3>Link falso</h3>
+          <p>Página igualzinha à do banco ou dos Correios. Você digita a senha e entrega para o golpista.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v8H4v-8"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7c-2-3-6-3-6 0h6zm0 0c2-3 6-3 6 0h-6z"/></svg>
+          <h3>Promoção boa demais</h3>
+          <p>Celular grátis, desconto absurdo, "última unidade". Só quer o número do seu cartão.</p>
+        </div>
+        <div class="card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/><path d="m15 3 6 6M21 3l-6 6"/></svg>
+          <h3>Perfil falso</h3>
+          <p>Copiam foto e nome de um conhecido e pedem ajuda, ou vendem algo que nunca vai chegar.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · Exemplo -->
+  <section class="slide" data-nome="Um exemplo que todo mundo já viu">
+    <h2 class="titulo">Um exemplo que todo mundo já viu</h2>
+    <div class="corpo duas-colunas" style="grid-template-columns: 420px 1fr; align-items: start; padding-top: 4px">
+      <div class="telefone">
+        <div class="topo"><div class="avatar"></div><div>+55 13 9xxxx-xxxx<small>não está nos contatos</small></div></div>
+        <div class="bolha">Oi mãe, troquei de número. Salva esse aqui 🙏<time>14:02</time></div>
+        <div class="bolha">Tô com um boleto pra pagar hoje e meu app travou. Consegue fazer um PIX pra mim? Amanhã te devolvo<time>14:03</time></div>
+        <div class="bolha">Tem que ser agora, senão vence 😥<time>14:05</time></div>
+      </div>
+      <div>
+        <p class="grande" style="margin-bottom:26px">Tem tudo que um golpe precisa: <b>número novo</b>, <b>pressa</b> e <b>pedido de dinheiro</b>.</p>
+        <ol class="passos-resposta" style="list-style:none;padding:0">
+          <li><span class="n">1</span><span>Não responda pelo número novo.</span></li>
+          <li><span class="n">2</span><span>Ligue para o número antigo do seu filho. Se for ele mesmo, ele atende.</span></li>
+          <li><span class="n">3</span><span>Avise a família: o golpista costuma tentar com todo mundo.</span></li>
+        </ol>
+        <p class="destaque">Nunca mande dinheiro sem confirmar por ligação.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · Como perceber -->
+  <section class="slide" data-nome="Como perceber que é golpe">
+    <h2 class="titulo">Como perceber que é golpe</h2>
+    <div class="corpo">
+      <div class="sinais">
+        <div class="sinal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>
+          <h3>Pressa</h3><p>"Tem que ser agora", "vence hoje", "última chance".</p>
+        </div>
+        <div class="sinal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+          <h3>Pede dinheiro ou código</h3><p>PIX, cartão, ou "me passa o código que chegou por SMS".</p>
+        </div>
+        <div class="sinal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+          <h3>Link estranho</h3><p>Endereço com letra trocada, encurtado, ou diferente do site oficial.</p>
+        </div>
+        <div class="sinal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16M6 16 16.5 5.5a2 2 0 0 1 3 3L9 19l-4 1z"/></svg>
+          <h3>Erros de escrita</h3><p>Texto mal escrito, mistura de português com outra língua, nome errado.</p>
+        </div>
+        <div class="sinal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#D8232A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/></svg>
+          <h3>Bom demais</h3><p>Prêmio que você não concorreu, produto quase de graça.</p>
+        </div>
+      </div>
+      <div class="faixa">Não precisa ter os cinco. <b>Um sinal já basta para parar e conferir.</b></div>
+    </div>
+  </section>
+
+  <!-- 8 · Como se proteger -->
+  <section class="slide" data-nome="Como se proteger">
+    <h2 class="titulo">Como se proteger</h2>
+    <div class="corpo">
+      <ul class="lista">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>Não clique em link que você não pediu.</strong> Banco, Correios e loja: entre pelo aplicativo ou digitando o site.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>Nunca passe código que chegou por SMS.</strong> Nem para quem diz ser do banco, nem para "o WhatsApp".</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>Confirme por ligação antes de mandar dinheiro.</strong> Uma chamada de um minuto evita o prejuízo.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>Senha diferente para cada conta importante.</strong> Banco, e-mail e WhatsApp não podem ter a mesma.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#1E8E3E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><strong>Ative a verificação em duas etapas.</strong> É a proteção mais forte e mais esquecida. Vamos fazer juntos no próximo slide.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 9 · Verificação em duas etapas -->
+  <section class="slide" data-nome="Verificação em duas etapas no WhatsApp">
+    <h2 class="titulo">Verificação em duas etapas no WhatsApp</h2>
+    <p class="subtitulo">Pegue o celular. Leva dois minutos e vale para sempre.</p>
+    <div class="corpo">
+      <div class="passos">
+        <div class="passo">
+          <span class="n">1</span>
+          <h3>Abra as Configurações</h3>
+          <p>Toque nos três pontinhos no canto (Android) ou em "Config." embaixo (iPhone).</p>
+          <div class="tela">⋮ &nbsp;→ <b>Configurações</b></div>
+        </div>
+        <div class="passo">
+          <span class="n">2</span>
+          <h3>Entre em Conta</h3>
+          <p>Depois toque em "Confirmação em duas etapas".</p>
+          <div class="tela"><b>Conta</b> → Confirmação em duas etapas</div>
+        </div>
+        <div class="passo">
+          <span class="n">3</span>
+          <h3>Crie um PIN de 6 números</h3>
+          <p>Escolha um que não seja sua data de nascimento e anote em lugar seguro.</p>
+          <div class="tela">PIN: <b>● ● ● ● ● ●</b></div>
+        </div>
+        <div class="passo">
+          <span class="n">4</span>
+          <h3>Coloque um e-mail</h3>
+          <p>Serve para recuperar o PIN se esquecer. Pronto, está ativado.</p>
+          <div class="tela">E-mail de recuperação → <b>Ativar</b></div>
+        </div>
+      </div>
+      <div class="faixa">Com isso ligado, <b>mesmo que roubem seu chip ou clonem seu número</b>, ninguém entra no seu WhatsApp sem o PIN.</div>
+    </div>
+  </section>
+
+  <!-- 10 · Dicas rápidas -->
+  <section class="slide" data-nome="Dicas rápidas para o dia a dia">
+    <h2 class="titulo">Dicas rápidas para o dia a dia</h2>
+    <div class="corpo">
+      <ul class="lista">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M11 12 21 2M18 5l2 2M15 8l2 2"/></svg><span><strong>Senha forte é uma frase sua</strong> com número e símbolo, tipo <span class="senha">Praia@Sol2026</span></span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M2 9a14 14 0 0 1 20 0"/><circle cx="12" cy="19.5" r="1"/><path d="m3 3 18 18"/></svg><span><strong>Não pague nem entre no banco em Wi-Fi público.</strong> Use os dados do celular.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg><span><strong>Mantenha os aplicativos atualizados.</strong> As atualizações fecham as brechas que os golpistas usam.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 21 12l-9 9-9-9z"/><path d="M12 8v5M12 16h.01"/></svg><span><strong>Antes de pagar, confira quem vai receber.</strong> O nome aparece na tela do PIX. Se for estranho, pare.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="#0044A9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9" r="2.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6M16 14c3 0 5.5 2 5.5 5"/></svg><span><strong>Na dúvida, pergunte para alguém</strong> antes de clicar. Golpe precisa de pressa; conversa tira a pressa.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 11 · Conclusão -->
+  <section class="slide" data-nome="Para levar para casa">
+    <h2 class="titulo">Para levar para casa</h2>
+    <div class="corpo">
+      <div class="final">
+        <div><b>Golpe é comum, não é vergonha.</b>Quem conta o que aconteceu ajuda a proteger os outros.</div>
+        <div><b>Pressa é sinal de alerta.</b>Ninguém precisa de PIX "agora ou nunca".</div>
+        <div><b>Confirme antes de pagar.</b>Ligue para a pessoa, entre pelo aplicativo, confira o nome.</div>
+        <div><b>Proteja suas contas.</b>Senhas diferentes e verificação em duas etapas ligada.</div>
+      </div>
+      <div class="obrigado">
+        <h2>Obrigado!</h2>
+        <p>Agora é a sua vez: conte um caso, tire uma dúvida, ou vamos ativar a verificação em duas etapas juntos.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="progresso"></div>
+  <footer id="rodape">
+    <img src="assets/unisanta-logo-branco.png" alt="Unisanta — Universidade Santa Cecília">
+    <div class="info"><span>Segurança digital · Extensão curricular · ADS</span><span id="contador">1 / 11</span></div>
+  </footer>
+</div>
+
+<div id="dica" title="Atalhos">? atalhos</div>
+
+<div id="ajuda" role="dialog" aria-label="Atalhos">
+  <div>
+    <h2>Atalhos</h2>
+    <kbd>→</kbd><kbd>Espaço</kbd> próximo slide<br>
+    <kbd>←</kbd> slide anterior<br>
+    <kbd>Home</kbd><kbd>End</kbd> primeiro / último<br>
+    <kbd>F</kbd> tela cheia<br>
+    <kbd>P</kbd> imprimir (um slide por página)<br>
+    <kbd>?</kbd> ou <kbd>Esc</kbd> fecha esta ajuda<br>
+    Clique na metade direita ou deslize o dedo para avançar.
+  </div>
+</div>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var contador = document.getElementById('contador');
+  var progresso = document.getElementById('progresso');
+  var ajuda = document.getElementById('ajuda');
+  var palco = document.getElementById('palco');
+  var atual = 0;
+
+  function lerHash() {
+    var n = parseInt((location.hash || '').replace('#', ''), 10);
+    return isNaN(n) ? 0 : Math.min(Math.max(n - 1, 0), total - 1);
+  }
+
+  function mostrar(i, semHash) {
+    atual = Math.min(Math.max(i, 0), total - 1);
+    slides.forEach(function (s, k) { s.classList.toggle('ativo', k === atual); });
+    contador.textContent = (atual + 1) + ' / ' + total;
+    progresso.style.width = ((atual + 1) / total * 100) + '%';
+    document.title = slides[atual].getAttribute('data-nome') + ' — Segurança Digital · Unisanta';
+    if (!semHash) history.replaceState(null, '', '#' + (atual + 1));
+  }
+
+  function proximo() { mostrar(atual + 1); }
+  function anterior() { mostrar(atual - 1); }
+
+  function escalar() {
+    var e = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    palco.style.setProperty('--escala', e);
+  }
+
+  function telaCheia() {
+    var el = document.documentElement;
+    if (!document.fullscreenElement) {
+      (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+  }
+
+  function alternarAjuda(force) {
+    ajuda.classList.toggle('aberto', force);
+  }
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.altKey || ev.ctrlKey || ev.metaKey) return;
+    switch (ev.key) {
+      case 'ArrowRight': case 'ArrowDown': case ' ': case 'PageDown': case 'Enter':
+        ev.preventDefault(); proximo(); break;
+      case 'ArrowLeft': case 'ArrowUp': case 'PageUp': case 'Backspace':
+        ev.preventDefault(); anterior(); break;
+      case 'Home': ev.preventDefault(); mostrar(0); break;
+      case 'End': ev.preventDefault(); mostrar(total - 1); break;
+      case 'f': case 'F': telaCheia(); break;
+      case 'p': case 'P': window.print(); break;
+      case '?': alternarAjuda(); break;
+      case 'Escape': alternarAjuda(false); break;
+    }
+  });
+
+  document.getElementById('dica').addEventListener('click', function () { alternarAjuda(); });
+  ajuda.addEventListener('click', function () { alternarAjuda(false); });
+
+  // clique: metade direita avança, esquerda volta
+  palco.addEventListener('click', function (ev) {
+    if (ev.target.closest('#rodape')) return;
+    var r = palco.getBoundingClientRect();
+    (ev.clientX - r.left) / r.width > 0.5 ? proximo() : anterior();
+  });
+
+  // swipe
+  var x0 = null;
+  document.addEventListener('touchstart', function (ev) { x0 = ev.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (ev) {
+    if (x0 === null) return;
+    var dx = ev.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 50) { dx < 0 ? proximo() : anterior(); }
+    x0 = null;
+  }, { passive: true });
+
+  window.addEventListener('resize', escalar);
+  window.addEventListener('hashchange', function () { mostrar(lerHash(), true); });
+  window.addEventListener('beforeprint', function () { slides.forEach(function (s) { s.classList.add('ativo'); }); });
+  window.addEventListener('afterprint', function () { mostrar(atual, true); });
+
+  escalar();
+  mostrar(lerHash(), true);
+})();
+</script>
+</body>
+</html>
